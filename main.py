@@ -47,8 +47,8 @@ def run():
         print("No transcripts available for any videos.")
         return
 
-    # Step 3: Generate articles using Claude AI
-    print("\n✍️ STEP 3: Writing articles with Claude AI...\n")
+    # Step 3: Generate articles using local AI
+    print("\n✍️ STEP 3: Writing articles with local Ollama...\n")
     articles = write_articles_for_videos(videos_with_transcripts)
 
     if not articles:
