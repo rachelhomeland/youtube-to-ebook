@@ -36,19 +36,22 @@ I'll guide you through:
 | Command | Description |
 |---------|-------------|
 | `python main.py` | Generate ebook from latest videos |
-| `python main.py --channels` | Edit channel list |
-| `python dashboard.py` | Launch web dashboard |
+| `python -m streamlit run dashboard.py` | Launch web dashboard |
+
+To configure channels, edit the `CHANNELS` list in `get_videos.py` before running the full pipeline.
 
 ## Key Files
 
 ```
-youtube-newsletter/
-├── get_videos.py      # Fetch latest videos
+project-root/
+├── get_videos.py      # Fetch latest videos and configure CHANNELS
 ├── get_transcripts.py # Extract transcripts
 ├── write_articles.py  # Transform to articles
 ├── send_email.py      # Create EPUB & send
 ├── main.py            # Run full pipeline
-├── channels.txt       # Your channel list
+├── dashboard.py       # Streamlit dashboard
+├── run_newsletter.sh  # launchd runner
+├── com.youtube.newsletter.plist # launchd configuration
 └── .env               # API keys
 ```
 
