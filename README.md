@@ -122,7 +122,7 @@ OLLAMA_MODEL=qwen3.5:9b
 
 ## macOS 定时运行
 
-本地 Ollama 只能在自己的电脑上访问，因此电子书生成应通过 macOS `launchd` 在本机运行。先记录项目的绝对路径，例如 `/Users/yourname/youtube-to-ebook`，并执行 `mkdir -p logs`。然后在复制 plist 前，将 `run_newsletter.sh` 中全部 3 处、以及 `com.youtube.newsletter.plist` 中全部 4 处 `/Users/bytedance/youtube-newsletter` 替换为该绝对路径。`run_newsletter.sh` 中的 `python3` 也应替换为 `which python3` 输出的路径（如果该 Python 才安装了项目依赖）。
+本地 Ollama 只能在自己的电脑上访问，因此电子书生成应通过 macOS `launchd` 在本机运行。先记录项目的绝对路径，例如 `/Users/yourname/youtube-to-ebook`，并执行 `mkdir -p logs`。然后在复制 plist 前，将 `run_newsletter.sh` 中全部 3 行（共 4 个路径字符串）、以及 `com.youtube.newsletter.plist` 中全部 4 处 `/Users/bytedance/youtube-newsletter` 替换为该绝对路径。`run_newsletter.sh` 中的 `python3` 也应替换为 `which python3` 输出的路径（如果该 Python 才安装了项目依赖）。
 
 检查 plist 语法后再安装：
 
