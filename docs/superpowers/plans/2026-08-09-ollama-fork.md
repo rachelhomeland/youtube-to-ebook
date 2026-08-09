@@ -30,7 +30,7 @@
 - Modify `main.py`: provider-neutral command-line wording.
 - Create `tests/test_ollama_client.py`: configuration and readiness unit tests.
 - Create `tests/test_write_articles.py`: prompt, response, failure, and batch behavior tests.
-- Create `tests/test_project_copy.py`: regression checks for configuration keys and removal of user-facing Claude requirements.
+- Create `tests/test_env_example.py`: parse the shipped example through the real Ollama configuration loader.
 - Create `requirements-dev.txt`: repeatable test dependencies.
 - Modify `requirements.txt`: remove the unused legacy transcript client while retaining runtime dependencies.
 - Modify `.env.example`, `README.md`, `SKILL.md`, and `dashboard.py`: accurate Chinese-first setup and Ollama wording.
@@ -588,68 +588,46 @@ git commit -m "feat: generate articles with local Ollama"
 - Modify: `SKILL.md:1-171`
 - Modify: `dashboard.py:724,890`
 - Create: `LICENSE`
-- Create: `tests/test_project_copy.py`
+- Create: `tests/test_env_example.py`
 
 **Interfaces:**
 - Consumes: configuration keys and defaults from `ollama_client.py`.
 - Produces: a Chinese-first installation path using `YOUTUBE_API_KEY`, `SUPADATA_API_KEY`, `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, and optional Gmail values.
 
-- [ ] **Step 1: Write failing project-copy tests**
+- [ ] **Step 1: Write the failing example-configuration behavior test**
 
-Create `tests/test_project_copy.py`:
+Create `tests/test_env_example.py`:
 
 ```python
 from pathlib import Path
 
+from dotenv import dotenv_values
 
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def read(path):
-    return (ROOT / path).read_text(encoding="utf-8")
+from ollama_client import load_ollama_config
 
 
-def test_example_environment_matches_runtime_services():
-    content = read(".env.example")
-    assert "YOUTUBE_API_KEY=" in content
-    assert "SUPADATA_API_KEY=" in content
-    assert "OLLAMA_BASE_URL=http://localhost:11434" in content
-    assert "OLLAMA_MODEL=qwen3.5:4b" in content
-    assert "ANTHROPIC_API_KEY" not in content
+def test_example_environment_drives_the_supported_local_defaults():
+    example = dotenv_values(
+        Path(__file__).resolve().parents[1] / ".env.example"
+    )
+    config = load_ollama_config(example)
 
-
-def test_user_facing_files_do_not_require_claude():
-    for path in ["README.md", "SKILL.md", "main.py", "dashboard.py"]:
-        content = read(path).lower()
-        assert "anthropic_api_key" not in content, path
-        assert "console.anthropic.com" not in content, path
-        assert "claude-sonnet" not in content, path
-        assert "claude ai" not in content, path
-        assert "powered by claude" not in content, path
-
-
-def test_readme_names_the_fork_and_upstream():
-    content = read("README.md")
-    assert "rachelhomeland/youtube-to-ebook" in content
-    assert "zarazhangrui/youtube-to-ebook" in content
-
-
-def test_license_credits_upstream_and_fork():
-    content = read("LICENSE")
-    assert "Copyright (c) 2026 zarazhangrui" in content
-    assert "Copyright (c) 2026 rachelhomeland" in content
-    assert "Permission is hereby granted, free of charge" in content
+    assert config.base_url == "http://localhost:11434"
+    assert config.model == "qwen3.5:4b"
+    assert example["YOUTUBE_API_KEY"]
+    assert example["SUPADATA_API_KEY"]
+    assert "ANTHROPIC_API_KEY" not in example
 ```
 
-- [ ] **Step 2: Run the copy tests and confirm they fail**
+- [ ] **Step 2: Run the example-configuration test and confirm it fails**
 
 Run:
 
 ```bash
-python -m pytest tests/test_project_copy.py -v
+python -m pytest tests/test_env_example.py -v
 ```
 
-Expected: failures identify the old Anthropic environment entry, Claude wording, generic clone URL, missing Supadata entry, and missing `LICENSE`.
+Expected: the test fails because `.env.example` lacks `SUPADATA_API_KEY` and still carries the unsupported Anthropic key.
 
 - [ ] **Step 3: Replace `.env.example` with the active configuration**
 
@@ -942,17 +920,18 @@ Permission is hereby granted, free of charge, to any person obtaining a copy
 
 Include the complete standard MIT grant, copyright notice condition, and warranty disclaimer.
 
-- [ ] **Step 8: Run documentation regression tests and scans**
+- [ ] **Step 8: Run the configuration behavior test and manual documentation scans**
 
 Run:
 
 ```bash
-python -m pytest tests/test_project_copy.py -v
+python -m pytest tests/test_env_example.py -v
 rg -n "ANTHROPIC_API_KEY|claude-sonnet|Claude AI|Powered by Claude" . \
   -g '!docs/superpowers/**' -g '!tests/**' -g '!.git/**'
+rg -n "rachelhomeland/youtube-to-ebook|zarazhangrui/youtube-to-ebook|Copyright \(c\) 2026" README.md LICENSE
 ```
 
-Expected: all tests pass; the scan may show no matches. The lower-level `anthropic` package name may remain in `requirements.txt` and `ollama_client.py` because it is used only as Ollama's compatible transport.
+Expected: the configuration behavior test passes; the provider scan has no matches; the attribution scan shows both repository names in README and both copyright lines in LICENSE. The lower-level `anthropic` package name may remain in `requirements.txt` and `ollama_client.py` because it is used only as Ollama's compatible transport.
 
 - [ ] **Step 9: Run the complete local suite**
 
@@ -969,7 +948,7 @@ Expected: all tests pass, compilation succeeds, and the diff check produces no o
 - [ ] **Step 10: Commit documentation and branding**
 
 ```bash
-git add .env.example requirements.txt README.md SKILL.md dashboard.py LICENSE tests/test_project_copy.py
+git add .env.example requirements.txt README.md SKILL.md dashboard.py LICENSE tests/test_env_example.py
 git commit -m "docs: rebrand fork for local Ollama"
 ```
 
