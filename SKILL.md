@@ -11,7 +11,7 @@ Transform YouTube videos from your favorite channels into well-written magazine-
 
 1. Fetches latest videos from YouTube channels (filtering out Shorts)
 2. Extracts transcripts from those videos
-3. Transforms transcripts into polished articles using Claude
+3. Transforms transcripts into polished articles using a local Ollama model
 4. Packages articles into an EPUB ebook for reading on any device
 
 ## Quick Start
@@ -26,28 +26,32 @@ I'll guide you through:
 
 ## Requirements
 
-- Python 3.8+
-- YouTube Data API key (free from Google Cloud Console)
-- Anthropic API key (for Claude)
+- Python 3.9+
+- Ollama with `qwen3.5:4b` or another configured local model
+- YouTube Data API key
+- Supadata API key for transcript retrieval
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
 | `python main.py` | Generate ebook from latest videos |
-| `python main.py --channels` | Edit channel list |
-| `python dashboard.py` | Launch web dashboard |
+| `python -m streamlit run dashboard.py` | Launch web dashboard |
+
+To configure channels, edit the `CHANNELS` list in `get_videos.py` before running the full pipeline.
 
 ## Key Files
 
 ```
-youtube-newsletter/
-├── get_videos.py      # Fetch latest videos
+project-root/
+├── get_videos.py      # Fetch latest videos and configure CHANNELS
 ├── get_transcripts.py # Extract transcripts
 ├── write_articles.py  # Transform to articles
 ├── send_email.py      # Create EPUB & send
 ├── main.py            # Run full pipeline
-├── channels.txt       # Your channel list
+├── dashboard.py       # Streamlit dashboard
+├── run_newsletter.sh  # launchd runner
+├── com.youtube.newsletter.plist # launchd configuration
 └── .env               # API keys
 ```
 
@@ -84,32 +88,22 @@ youtube.playlistItems().list(
 ).execute()
 ```
 
-### 3. Transcript API Syntax
-**Problem**: `YouTubeTranscriptApi.get_transcript()` no longer works.
+### 3. Transcript Retrieval
 
-**Solution**: Use instance method:
-```python
-from youtube_transcript_api import YouTubeTranscriptApi
+**Problem**: Direct YouTube transcript libraries can be blocked or change their API.
 
-ytt_api = YouTubeTranscriptApi()
-transcript = ytt_api.fetch(video_id)
-```
+**Solution**: Configure `SUPADATA_API_KEY` in `.env`. The project sends the video URL to Supadata and reads the returned text transcript.
 
-### 4. Rate Limiting on Transcripts
-**Problem**: Fetching many transcripts quickly triggers rate limits.
+### 4. Supadata Errors
 
-**Solution**: Add 2-second delays between requests:
-```python
-import time
-for video in videos:
-    transcript = get_transcript(video["video_id"])
-    time.sleep(2)
-```
+**Problem**: Transcript requests may fail because the key is missing, a video has no transcript, or the service rate limit is reached.
+
+**Solution**: Check the status message printed by `get_transcripts.py`. HTTP 401 means the key is invalid, 404 means no transcript is available, and 429 means the request should be retried later.
 
 ### 5. Transcript Accuracy (Names, Terms)
 **Problem**: Auto-transcripts misspell names and technical terms.
 
-**Solution**: Include video title and description in Claude's context—these usually have correct spellings.
+**Solution**: Include the video title and description in the local model context—these usually contain the correct spellings.
 
 ### 6. Cloud Automation Blocked
 **Problem**: GitHub Actions and cloud servers are blocked by YouTube for transcript fetching.
@@ -147,7 +141,7 @@ Edit the prompt in `write_articles.py` to change article tone:
 - Technical documentation
 
 ### Email Delivery (Optional)
-Add Gmail credentials to `.env` to receive ebooks via email:
+Add Gmail credentials to .env only when you want email delivery:
 ```
 GMAIL_ADDRESS=your@gmail.com
 GMAIL_APP_PASSWORD=your-app-password
@@ -158,7 +152,7 @@ GMAIL_APP_PASSWORD=your-app-password
 ```
 ┌─────────────┐    ┌──────────────┐    ┌───────────────┐    ┌────────────┐
 │ Fetch Videos│───▶│Get Transcripts│───▶│Write Articles │───▶│Create EPUB │
-│ (YouTube API)│    │(Transcript API)│    │  (Claude AI)  │    │ (ebooklib) │
+│ (YouTube API)│    │  (Supadata)  │    │(Ollama Local) │    │ (ebooklib) │
 └─────────────┘    └──────────────┘    └───────────────┘    └────────────┘
 ```
 

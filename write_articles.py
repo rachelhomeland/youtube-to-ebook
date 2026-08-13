@@ -1,24 +1,21 @@
-"""
-Part 3: Transform Transcripts into Magazine Articles using Claude AI
-Takes raw video transcripts and turns them into polished, readable articles.
-"""
+"""Transform video transcripts into magazine articles using local Ollama."""
 
-import os
-import anthropic
-from dotenv import load_dotenv
-
-# Load your API key
-load_dotenv()
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-
-# Create the Claude client
-client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+from ollama_client import (
+    OllamaSetupError,
+    create_ollama_client,
+    ensure_ollama_ready,
+    load_ollama_config,
+)
 
 
-def write_article(video):
-    """
-    Use Claude to transform a video transcript into a magazine-style article.
-    """
+DEFAULT_CONFIG = load_ollama_config()
+DEFAULT_CLIENT = create_ollama_client(DEFAULT_CONFIG)
+
+
+def write_article(video, *, article_client=None, config=None):
+    config = config or DEFAULT_CONFIG
+    article_client = article_client or DEFAULT_CLIENT
+    description = video.get("description", "")
     prompt = f"""You are a skilled magazine writer. Transform this YouTube video transcript into a well-written, engaging article.
 
 VIDEO TITLE: {video['title']}
@@ -26,7 +23,7 @@ CHANNEL: {video['channel']}
 VIDEO URL: {video['url']}
 
 VIDEO DESCRIPTION:
-{video['description']}
+{description}
 
 TRANSCRIPT:
 {video['transcript']}
@@ -45,49 +42,64 @@ Remix this YouTube transcript into a magazine article. Guidelines:
 Format the article in clean markdown."""
 
     try:
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
+        message = article_client.messages.create(
+            model=config.model,
             max_tokens=8000,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
+            messages=[{"role": "user", "content": prompt}],
         )
-
-        return message.content[0].text
-
-    except Exception as e:
-        print(f"  ⚠ Error generating article: {e}")
+        text = "\n\n".join(
+            block.text.strip()
+            for block in message.content
+            if getattr(block, "text", "").strip()
+        ).strip()
+        if not text:
+            print(f"  ⚠ Ollama 为《{video['title']}》返回了空内容")
+            return None
+        return text
+    except Exception as exc:
+        print(f"  ⚠ 生成《{video['title']}》失败：{exc}")
         return None
 
 
-def write_articles_for_videos(videos):
-    """
-    Generate articles for all videos with transcripts.
-    """
-    print("\nGenerating articles with Claude AI...\n")
-    print("=" * 60)
+def write_articles_for_videos(
+    videos,
+    *,
+    article_client=None,
+    config=None,
+    readiness_check=ensure_ollama_ready,
+):
+    config = config or DEFAULT_CONFIG
+    article_client = article_client or DEFAULT_CLIENT
+    print(f"\n正在使用本地 Ollama 模型 {config.model} 生成文章...\n")
+    try:
+        readiness_check(config)
+    except OllamaSetupError as exc:
+        print(f"  ⚠ {exc}")
+        return []
 
+    print("=" * 60)
     articles = []
 
     for video in videos:
         print(f"Writing article: {video['title'][:50]}...")
-
-        article = write_article(video)
-
+        article = write_article(
+            video,
+            article_client=article_client,
+            config=config,
+        )
         if article:
             articles.append({
                 "title": video["title"],
                 "channel": video["channel"],
                 "url": video["url"],
-                "article": article
+                "article": article,
             })
-            print(f"  ✓ Article generated!\n")
+            print("  ✓ Article generated!\n")
         else:
-            print(f"  ✗ Failed to generate article\n")
+            print("  ✗ Failed to generate article\n")
 
     print("=" * 60)
     print(f"Generated {len(articles)} articles")
-
     return articles
 
 

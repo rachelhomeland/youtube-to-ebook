@@ -721,7 +721,7 @@ elif page == "Channels":
 # ============================================
 elif page == "Writing Style":
     st.markdown("## Writing Style")
-    st.write("Customize how Claude AI writes your articles.")
+    st.write("Customize how your local AI writes articles.")
 
     with open(PROMPT_FILE) as f:
         content = f.read()
@@ -887,4 +887,4 @@ elif page == "Schedule":
 # Footer
 # ============================================
 st.markdown("---")
-st.caption("The Digest • Powered by Claude AI")
+st.caption("The Digest • Powered by local Ollama")
