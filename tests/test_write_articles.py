@@ -29,6 +29,12 @@ def client_returning(text):
     return client
 
 
+def client_returning_blocks(blocks):
+    client = Mock()
+    client.messages.create.return_value = SimpleNamespace(content=blocks)
+    return client
+
+
 def test_write_article_uses_configured_model_and_returns_trimmed_text():
     client = client_returning("  # Generated article  ")
     result = write_articles.write_article(
@@ -55,6 +61,32 @@ def test_write_article_rejects_empty_response(capsys):
     assert write_articles.write_article(
         video(), article_client=client, config=CONFIG
     ) is None
+    assert "空内容" in capsys.readouterr().out
+
+
+def test_write_article_ignores_thinking_blocks_before_text():
+    client = client_returning_blocks([
+        SimpleNamespace(type="thinking", thinking="internal reasoning"),
+        SimpleNamespace(type="text", text="  # Generated article  "),
+    ])
+
+    result = write_articles.write_article(
+        video(), article_client=client, config=CONFIG
+    )
+
+    assert result == "# Generated article"
+
+
+def test_write_article_rejects_response_without_text_blocks(capsys):
+    client = client_returning_blocks([
+        SimpleNamespace(type="thinking", thinking="internal reasoning"),
+    ])
+
+    result = write_articles.write_article(
+        video(), article_client=client, config=CONFIG
+    )
+
+    assert result is None
     assert "空内容" in capsys.readouterr().out
 
 

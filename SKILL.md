@@ -26,7 +26,7 @@ I'll guide you through:
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.9+
 - Ollama with `qwen3.5:4b` or another configured local model
 - YouTube Data API key
 - Supadata API key for transcript retrieval

@@ -47,7 +47,11 @@ Format the article in clean markdown."""
             max_tokens=8000,
             messages=[{"role": "user", "content": prompt}],
         )
-        text = message.content[0].text.strip()
+        text = "\n\n".join(
+            block.text.strip()
+            for block in message.content
+            if getattr(block, "text", "").strip()
+        ).strip()
         if not text:
             print(f"  ⚠ Ollama 为《{video['title']}》返回了空内容")
             return None

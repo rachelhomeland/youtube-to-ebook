@@ -13,7 +13,7 @@
 
 ## 准备工作
 
-- Python 3.8 或更高版本
+- Python 3.9 或更高版本
 - [Ollama](https://ollama.com/download)
 - YouTube Data API Key
 - Supadata API Key
@@ -93,7 +93,7 @@ Supadata 负责获取视频字幕。它与本地 Ollama 分开工作，因此即
 
 ### Gmail，可选
 
-完整的 `main.py` 流程会在生成 EPUB 后尝试发送邮件。需要邮件发送时，在 Google 账号中创建应用专用密码，然后填写：
+未配置 Gmail 时，`main.py` 会跳过邮件发送，并把 HTML 与 EPUB 保存到 `newsletters/`。需要邮件发送时，在 Google 账号中创建应用专用密码，然后填写：
 
 ```dotenv
 GMAIL_ADDRESS=your_email@gmail.com

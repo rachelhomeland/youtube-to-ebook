@@ -339,6 +339,12 @@ def send_newsletter(articles, recipient_email=None):
     # Create HTML content
     html_content = create_newsletter_html(articles)
 
+    if not GMAIL_ADDRESS or not GMAIL_APP_PASSWORD:
+        print("  未配置 Gmail，跳过邮件发送并保存本地电子书。")
+        save_newsletter_archive(html_content, epub_path, articles)
+        os.remove(epub_path)
+        return True
+
     # Create plain text version (simple fallback)
     text_content = "Your YouTube Newsletter\n\n"
     text_content += "📚 EPUB ebook attached - open on your phone's ebook reader!\n\n"
