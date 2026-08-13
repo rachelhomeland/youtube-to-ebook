@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from dotenv import dotenv_values
+
 import send_email
 
 
@@ -45,3 +47,37 @@ def test_missing_gmail_credentials_archives_epub_without_sending(
     assert archive_marker.read_text() == "A useful talk"
     assert not epub_path.exists()
     assert "未配置 Gmail" in capsys.readouterr().out
+
+
+def test_example_gmail_values_keep_email_delivery_disabled(
+    monkeypatch, tmp_path
+):
+    example = dotenv_values(Path(__file__).resolve().parents[1] / ".env.example")
+    epub_path = tmp_path / "digest.epub"
+    epub_path.write_bytes(b"epub")
+    archived = []
+
+    monkeypatch.setattr(send_email, "GMAIL_ADDRESS", example["GMAIL_ADDRESS"])
+    monkeypatch.setattr(
+        send_email, "GMAIL_APP_PASSWORD", example["GMAIL_APP_PASSWORD"]
+    )
+    monkeypatch.setattr(send_email, "create_epub", lambda articles: str(epub_path))
+    monkeypatch.setattr(
+        send_email,
+        "create_newsletter_html",
+        lambda articles: "<html>digest</html>",
+    )
+    monkeypatch.setattr(
+        send_email,
+        "save_newsletter_archive",
+        lambda html, path, articles: archived.append(path),
+    )
+
+    class UnexpectedSMTP:
+        def __init__(self, *args, **kwargs):
+            raise AssertionError("Example values must not enable SMTP")
+
+    monkeypatch.setattr(send_email.smtplib, "SMTP_SSL", UnexpectedSMTP)
+
+    assert send_email.send_newsletter([article()]) is True
+    assert archived == [str(epub_path)]
