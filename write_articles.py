@@ -45,7 +45,10 @@ Format the article in clean markdown."""
         text = "\n\n".join(
             block.text.strip()
             for block in message.content
-            if getattr(block, "text", "").strip()
+            if (
+                getattr(block, "type", None) == "text"
+                and getattr(block, "text", "").strip()
+            )
         ).strip()
         if not text:
             print(f"  ⚠ DeepSeek 为《{video['title']}》返回了空内容")

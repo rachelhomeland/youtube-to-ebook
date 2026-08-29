@@ -12,10 +12,15 @@ def test_load_config_requires_api_key():
     assert "DEEPSEEK_API_KEY" in str(error.value)
 
 
-def test_load_config_rejects_example_api_key():
+@pytest.mark.parametrize("placeholder", [
+    "your_deepseek_api_key_here",
+    "your-key",
+    "你的_DeepSeek_API_Key",
+])
+def test_load_config_rejects_documented_api_key_placeholders(placeholder):
     with pytest.raises(deepseek_client.DeepSeekSetupError) as error:
         deepseek_client.load_deepseek_config({
-            "DEEPSEEK_API_KEY": "your_deepseek_api_key_here",
+            "DEEPSEEK_API_KEY": placeholder,
         })
 
     assert "DEEPSEEK_API_KEY" in str(error.value)

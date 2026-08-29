@@ -25,7 +25,7 @@ def video(description="Useful description"):
 def client_returning(text):
     client = Mock()
     client.messages.create.return_value = SimpleNamespace(
-        content=[SimpleNamespace(text=text)]
+        content=[SimpleNamespace(type="text", text=text)]
     )
     return client
 
@@ -76,6 +76,19 @@ def test_write_article_ignores_thinking_blocks_before_text():
     )
 
     assert result == "# Generated article"
+
+
+def test_write_article_ignores_text_attributes_on_non_text_blocks():
+    client = client_returning_blocks([
+        SimpleNamespace(type="tool_use", text="must not be included"),
+        SimpleNamespace(type="text", text="Article body"),
+    ])
+
+    result = write_articles.write_article(
+        video(), article_client=client, config=CONFIG
+    )
+
+    assert result == "Article body"
 
 
 def test_write_article_rejects_response_without_text_blocks(capsys):

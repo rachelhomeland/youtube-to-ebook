@@ -1,5 +1,7 @@
 # YouTube to Ebook Ollama Fork Design
 
+> Historical document: this Ollama design was superseded by the DeepSeek API migration on 2026-08-29. See the current `README.md`, `.env.example`, and `deepseek_client.py` for the supported setup.
+
 ## Goal
 
 Create a maintained fork of `zarazhangrui/youtube-to-ebook` under the GitHub account `rachelhomeland`. Keep the existing `youtube-to-ebook` name and end-to-end workflow, while replacing the paid Anthropic dependency with a local Ollama model. The first release targets personal use on a Mac and should be understandable to a Chinese-speaking user following the README.

@@ -10,7 +10,11 @@ from dotenv import load_dotenv
 
 DEFAULT_BASE_URL = "https://api.deepseek.com/anthropic"
 DEFAULT_MODEL = "deepseek-v4-flash"
-EXAMPLE_API_KEY = "your_deepseek_api_key_here"
+PLACEHOLDER_API_KEYS = {
+    "your_deepseek_api_key_here",
+    "your-key",
+    "你的_deepseek_api_key",
+}
 
 
 @dataclass(frozen=True)
@@ -28,7 +32,7 @@ def load_deepseek_config(environ=None):
     load_dotenv()
     values = os.environ if environ is None else environ
     api_key = values.get("DEEPSEEK_API_KEY", "").strip()
-    if not api_key or api_key == EXAMPLE_API_KEY:
+    if not api_key or api_key.casefold() in PLACEHOLDER_API_KEYS:
         raise DeepSeekSetupError(
             "请在 .env 中填写有效的 DEEPSEEK_API_KEY"
         )
