@@ -1,13 +1,14 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from ollama_client import OllamaConfig, OllamaSetupError
+from deepseek_client import DeepSeekConfig, DeepSeekSetupError
 import write_articles
 
 
-CONFIG = OllamaConfig(
-    base_url="http://localhost:11434",
-    model="qwen3.5:4b",
+CONFIG = DeepSeekConfig(
+    api_key="sk-test-key",
+    base_url="https://api.deepseek.com/anthropic",
+    model="deepseek-v4-flash",
 )
 
 
@@ -42,7 +43,7 @@ def test_write_article_uses_configured_model_and_returns_trimmed_text():
     )
     assert result == "# Generated article"
     request = client.messages.create.call_args.kwargs
-    assert request["model"] == "qwen3.5:4b"
+    assert request["model"] == "deepseek-v4-flash"
     assert request["max_tokens"] == 8000
     assert "Useful description" in request["messages"][0]["content"]
 
@@ -101,30 +102,37 @@ def test_write_article_reports_generation_error(capsys):
     assert "generation stopped" in output
 
 
-def test_batch_checks_readiness_once_and_generates_articles():
+def test_batch_generates_all_articles_without_local_readiness_check():
     client = client_returning("Article")
-    readiness_check = Mock()
     result = write_articles.write_articles_for_videos(
         [video(), video("Second description")],
         article_client=client,
         config=CONFIG,
-        readiness_check=readiness_check,
     )
-    readiness_check.assert_called_once_with(CONFIG)
     assert len(result) == 2
 
 
-def test_batch_stops_with_actionable_setup_error(capsys):
-    readiness_check = Mock(
-        side_effect=OllamaSetupError(
-            "未安装模型 qwen3.5:4b，请运行：ollama pull qwen3.5:4b"
-        )
-    )
+def test_batch_stops_with_actionable_missing_key_error(capsys):
+    def missing_config():
+        raise DeepSeekSetupError("请在 .env 中填写有效的 DEEPSEEK_API_KEY")
+
     result = write_articles.write_articles_for_videos(
         [video()],
-        article_client=client_returning("unused"),
-        config=CONFIG,
-        readiness_check=readiness_check,
+        config_loader=missing_config,
     )
     assert result == []
-    assert "ollama pull qwen3.5:4b" in capsys.readouterr().out
+    assert "DEEPSEEK_API_KEY" in capsys.readouterr().out
+
+
+def test_batch_builds_client_after_loading_config():
+    client = client_returning("Article")
+    client_factory = Mock(return_value=client)
+
+    result = write_articles.write_articles_for_videos(
+        [video()],
+        config_loader=lambda: CONFIG,
+        client_factory=client_factory,
+    )
+
+    assert len(result) == 1
+    client_factory.assert_called_once_with(CONFIG)

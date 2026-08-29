@@ -15,6 +15,7 @@ newsletters/
 # Python
 __pycache__/
 *.pyc
+pytest-of-*/
 
 # Mac files
 .DS_Store

@@ -1,20 +1,13 @@
-"""Transform video transcripts into magazine articles using local Ollama."""
+"""Transform video transcripts into magazine articles using DeepSeek."""
 
-from ollama_client import (
-    OllamaSetupError,
-    create_ollama_client,
-    ensure_ollama_ready,
-    load_ollama_config,
+from deepseek_client import (
+    DeepSeekSetupError,
+    create_deepseek_client,
+    load_deepseek_config,
 )
 
 
-DEFAULT_CONFIG = load_ollama_config()
-DEFAULT_CLIENT = create_ollama_client(DEFAULT_CONFIG)
-
-
 def write_article(video, *, article_client=None, config=None):
-    config = config or DEFAULT_CONFIG
-    article_client = article_client or DEFAULT_CLIENT
     description = video.get("description", "")
     prompt = f"""You are a skilled magazine writer. Transform this YouTube video transcript into a well-written, engaging article.
 
@@ -42,6 +35,8 @@ Remix this YouTube transcript into a magazine article. Guidelines:
 Format the article in clean markdown."""
 
     try:
+        config = config or load_deepseek_config()
+        article_client = article_client or create_deepseek_client(config)
         message = article_client.messages.create(
             model=config.model,
             max_tokens=8000,
@@ -53,9 +48,12 @@ Format the article in clean markdown."""
             if getattr(block, "text", "").strip()
         ).strip()
         if not text:
-            print(f"  ⚠ Ollama 为《{video['title']}》返回了空内容")
+            print(f"  ⚠ DeepSeek 为《{video['title']}》返回了空内容")
             return None
         return text
+    except DeepSeekSetupError as exc:
+        print(f"  ⚠ {exc}")
+        return None
     except Exception as exc:
         print(f"  ⚠ 生成《{video['title']}》失败：{exc}")
         return None
@@ -66,16 +64,17 @@ def write_articles_for_videos(
     *,
     article_client=None,
     config=None,
-    readiness_check=ensure_ollama_ready,
+    config_loader=load_deepseek_config,
+    client_factory=create_deepseek_client,
 ):
-    config = config or DEFAULT_CONFIG
-    article_client = article_client or DEFAULT_CLIENT
-    print(f"\n正在使用本地 Ollama 模型 {config.model} 生成文章...\n")
     try:
-        readiness_check(config)
-    except OllamaSetupError as exc:
+        config = config or config_loader()
+        article_client = article_client or client_factory(config)
+    except DeepSeekSetupError as exc:
         print(f"  ⚠ {exc}")
         return []
+
+    print(f"\n正在使用 DeepSeek 模型 {config.model} 生成文章...\n")
 
     print("=" * 60)
     articles = []
