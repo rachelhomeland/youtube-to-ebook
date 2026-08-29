@@ -92,6 +92,7 @@ def write_articles_for_videos(
         if article:
             articles.append({
                 "title": video["title"],
+                "video_id": video["video_id"],
                 "channel": video["channel"],
                 "url": video["url"],
                 "article": article,

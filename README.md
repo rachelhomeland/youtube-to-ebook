@@ -5,6 +5,7 @@
 ## 功能
 
 - 获取频道最新的长视频并过滤 Shorts
+- 可通过链接指定一个或多个视频，按需重新生成
 - 通过 Supadata 获取字幕
 - 通过 DeepSeek 把字幕整理成杂志风格文章
 - 生成适合手机和电子书阅读器的 EPUB
@@ -62,6 +63,28 @@ CHANNELS = [
 
 ```bash
 python main.py
+```
+
+只处理某一个指定视频：
+
+```bash
+python main.py --url "https://www.youtube.com/watch?v=视频ID"
+```
+
+一次处理多个指定视频时，重复使用 `--url`：
+
+```bash
+python main.py \
+  --url "https://www.youtube.com/watch?v=第一个视频ID" \
+  --url "https://youtu.be/第二个视频ID"
+```
+
+指定链接模式会跳过频道扫描和“已处理”过滤，因此同一个视频也可以重新生成；为避免误发邮件，该模式默认只把 HTML 与 EPUB 保存到 `newsletters/`。
+
+频道模式也可以强制只保存到本地：
+
+```bash
+python main.py --no-email
 ```
 
 启动网页管理界面：
