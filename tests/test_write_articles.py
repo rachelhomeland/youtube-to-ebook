@@ -15,6 +15,7 @@ CONFIG = DeepSeekConfig(
 def video(description="Useful description"):
     return {
         "title": "A useful talk",
+        "video_id": "dQw4w9WgXcQ",
         "channel": "Example Channel",
         "url": "https://youtube.com/watch?v=example",
         "description": description,
@@ -123,6 +124,7 @@ def test_batch_generates_all_articles_without_local_readiness_check():
         config=CONFIG,
     )
     assert len(result) == 2
+    assert result[0]["video_id"] == "dQw4w9WgXcQ"
 
 
 def test_batch_stops_with_actionable_missing_key_error(capsys):

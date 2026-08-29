@@ -5,7 +5,9 @@ Filters out YouTube Shorts by checking the /shorts/ URL.
 """
 
 import os
+import re
 import requests
+from urllib.parse import parse_qs, urlparse
 from googleapiclient.discovery import build
 from dotenv import load_dotenv
 
@@ -28,6 +30,96 @@ CHANNELS = [
     "@NoPriorsPodcast",
     "@DwarkeshPatel",
 ]
+
+VIDEO_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+
+def extract_video_id(value):
+    """Extract a YouTube video ID from a video ID or a common YouTube URL."""
+    value = (value or "").strip()
+    if VIDEO_ID_PATTERN.fullmatch(value):
+        return value
+
+    candidate_url = value
+    if candidate_url.startswith((
+        "youtube.com/",
+        "www.youtube.com/",
+        "m.youtube.com/",
+        "music.youtube.com/",
+        "youtu.be/",
+        "youtube-nocookie.com/",
+        "www.youtube-nocookie.com/",
+    )):
+        candidate_url = f"https://{candidate_url}"
+
+    parsed = urlparse(candidate_url)
+    host = (parsed.hostname or "").lower()
+    video_id = None
+
+    if host == "youtu.be":
+        video_id = parsed.path.strip("/").split("/", 1)[0]
+    elif host in {
+        "youtube.com",
+        "www.youtube.com",
+        "m.youtube.com",
+        "music.youtube.com",
+    }:
+        path_parts = [part for part in parsed.path.split("/") if part]
+        if parsed.path.rstrip("/") == "/watch":
+            video_id = parse_qs(parsed.query).get("v", [None])[0]
+        elif len(path_parts) >= 2 and path_parts[0] in {"shorts", "embed", "live"}:
+            video_id = path_parts[1]
+    elif host in {"youtube-nocookie.com", "www.youtube-nocookie.com"}:
+        path_parts = [part for part in parsed.path.split("/") if part]
+        if len(path_parts) >= 2 and path_parts[0] == "embed":
+            video_id = path_parts[1]
+
+    if not video_id or not VIDEO_ID_PATTERN.fullmatch(video_id):
+        raise ValueError(
+            f"无法识别 YouTube 视频链接或视频 ID：{value or '(空值)'}"
+        )
+    return video_id
+
+
+def get_videos_by_urls(video_urls, *, youtube=None):
+    """Fetch metadata for explicitly selected YouTube videos."""
+    video_ids = list(dict.fromkeys(extract_video_id(url) for url in video_urls))
+    if not video_ids:
+        return []
+
+    if youtube is None:
+        if not YOUTUBE_API_KEY:
+            raise ValueError("未配置 YOUTUBE_API_KEY，无法查询 YouTube 视频信息。")
+        youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+
+    items_by_id = {}
+    for offset in range(0, len(video_ids), 50):
+        batch = video_ids[offset:offset + 50]
+        response = youtube.videos().list(
+            part="snippet",
+            id=",".join(batch),
+        ).execute()
+        items_by_id.update(
+            {item["id"]: item for item in response.get("items", [])}
+        )
+
+    videos = []
+    for video_id in video_ids:
+        item = items_by_id.get(video_id)
+        if not item:
+            print(f"  ✗ YouTube 未返回视频：{video_id}")
+            continue
+        snippet = item["snippet"]
+        videos.append({
+            "title": snippet["title"],
+            "video_id": video_id,
+            "description": snippet.get("description", ""),
+            "channel": snippet["channelTitle"],
+            "url": f"https://www.youtube.com/watch?v={video_id}",
+        })
+
+    print(f"已获取 {len(videos)} 个指定视频。")
+    return videos
 
 
 def get_channel_info(youtube, channel_handle):
