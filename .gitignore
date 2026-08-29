@@ -10,6 +10,7 @@ processed_videos.json
 *.epub
 logs/
 newsletters/
+.worktrees/
 
 # Python
 __pycache__/
