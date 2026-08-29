@@ -1,5 +1,7 @@
 # Ollama-Based YouTube to Ebook Fork Implementation Plan
 
+> Historical document: this completed Ollama plan was superseded by the DeepSeek API migration on 2026-08-29. See the current `README.md`, `.env.example`, and `deepseek_client.py` for the supported setup.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Publish `rachelhomeland/youtube-to-ebook` as a tested fork that generates articles through a configurable local Ollama model without requiring an Anthropic account.

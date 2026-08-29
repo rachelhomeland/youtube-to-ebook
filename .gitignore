@@ -10,10 +10,12 @@ processed_videos.json
 *.epub
 logs/
 newsletters/
+.worktrees/
 
 # Python
 __pycache__/
 *.pyc
+pytest-of-*/
 
 # Mac files
 .DS_Store

@@ -11,7 +11,7 @@ Transform YouTube videos from your favorite channels into well-written magazine-
 
 1. Fetches latest videos from YouTube channels (filtering out Shorts)
 2. Extracts transcripts from those videos
-3. Transforms transcripts into polished articles using a local Ollama model
+3. Transforms transcripts into polished articles using the DeepSeek API
 4. Packages articles into an EPUB ebook for reading on any device
 
 ## Quick Start
@@ -27,9 +27,21 @@ I'll guide you through:
 ## Requirements
 
 - Python 3.9+
-- Ollama with `qwen3.5:4b` or another configured local model
+- DeepSeek API key with access to `deepseek-v4-flash` or another configured model
 - YouTube Data API key
 - Supadata API key for transcript retrieval
+
+Copy `.env.example` to `.env` and configure:
+
+```dotenv
+YOUTUBE_API_KEY=your-key
+SUPADATA_API_KEY=your-key
+DEEPSEEK_API_KEY=your-key
+DEEPSEEK_BASE_URL=https://api.deepseek.com/anthropic
+DEEPSEEK_MODEL=deepseek-v4-flash
+```
+
+DeepSeek is a cloud service billed by token. Video metadata and transcripts are sent to DeepSeek during article generation. Never commit the local `.env` file.
 
 ## Commands
 
@@ -103,7 +115,7 @@ youtube.playlistItems().list(
 ### 5. Transcript Accuracy (Names, Terms)
 **Problem**: Auto-transcripts misspell names and technical terms.
 
-**Solution**: Include the video title and description in the local model context—these usually contain the correct spellings.
+**Solution**: Include the video title and description in the DeepSeek context—these usually contain the correct spellings.
 
 ### 6. Cloud Automation Blocked
 **Problem**: GitHub Actions and cloud servers are blocked by YouTube for transcript fetching.
@@ -152,7 +164,7 @@ GMAIL_APP_PASSWORD=your-app-password
 ```
 ┌─────────────┐    ┌──────────────┐    ┌───────────────┐    ┌────────────┐
 │ Fetch Videos│───▶│Get Transcripts│───▶│Write Articles │───▶│Create EPUB │
-│ (YouTube API)│    │  (Supadata)  │    │(Ollama Local) │    │ (ebooklib) │
+│ (YouTube API)│    │  (Supadata)  │    │(DeepSeek API) │    │ (ebooklib) │
 └─────────────┘    └──────────────┘    └───────────────┘    └────────────┘
 ```
 
